@@ -1,0 +1,226 @@
+name: Multi-AI Review Pipeline
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+    branches: [master, main]
+  workflow_dispatch:
+    inputs:
+      review_depth:
+        description: 'Review depth (quick/standard/deep)'
+        required: true
+        default: 'standard'
+        type: choice
+        options:
+          - quick
+          - standard
+          - deep
+
+jobs:
+  # ============================================================================
+  # CONTRARIAN REVIEW: Challenge every assumption
+  # ============================================================================
+  contrarian-review:
+    name: Contrarian Analysis
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run Contrarian Review
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          # This review specifically looks for flaws, weaknesses, and overconfident claims
+          echo "Running contrarian analysis..."
+          cat > contrarian_prompt.txt << 'EOF'
+          You are a CONTRARIAN reviewer. Your job is to find everything wrong with this plan.
+
+          REVIEW FOCUS:
+          1. What assumptions are being made without evidence?
+          2. What could go wrong that isn't being discussed?
+          3. Where is the plan overconfident?
+          4. What market realities are being ignored?
+          5. What legal risks are understated?
+          6. What platform risks (KDP) aren't fully considered?
+          7. What competitor dynamics are missed?
+          8. Is the timeline realistic?
+          9. Are the revenue projections backed by data?
+          10. What would cause this entire approach to fail?
+
+          Be harsh. Be skeptical. Find the holes.
+          EOF
+
+          echo "Contrarian review prompt created."
+
+  # ============================================================================
+  # FOREST-FOR-TREES: Strategic overview analysis
+  # ============================================================================
+  strategic-review:
+    name: Strategic Overview
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run Strategic Review
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          # This review looks at the big picture
+          echo "Running strategic analysis..."
+          cat > strategic_prompt.txt << 'EOF'
+          You are a STRATEGIC reviewer. Look at the big picture.
+
+          REVIEW FOCUS:
+          1. Does this plan align with the user's goals (making money)?
+          2. Is this the best use of their time vs. alternatives?
+          3. What's the total addressable market for annotated PD editions?
+          4. What's the competitive moat (or lack thereof)?
+          5. Is this a business or a project?
+          6. What's the 3-year trajectory?
+          7. How does this scale (or not)?
+          8. What opportunities are being missed?
+          9. What's the exit strategy?
+          10. Is the effort-to-reward ratio favorable?
+
+          Think like an investor or advisor. Be direct.
+          EOF
+
+          echo "Strategic review prompt created."
+
+  # ============================================================================
+  # LEGAL REVIEW: Verify all legal claims
+  # ============================================================================
+  legal-review:
+    name: Legal Verification
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run Legal Review
+        run: |
+          echo "Running legal verification..."
+          cat > legal_prompt.txt << 'EOF'
+          You are a LEGAL reviewer. Verify all legal claims in this plan.
+
+          VERIFY:
+          1. Are the PD dates correct (1930 works → PD 2026)?
+          2. Are the EU term calculations accurate?
+          3. Is the trademark analysis sound?
+          4. Are the legal precedents cited correctly?
+          5. Is the nominative fair use analysis correct?
+          6. Are the KDP compliance requirements accurate?
+          7. Are there any hidden legal risks?
+          8. Is the dispute response approach defensible?
+          9. What international complications are missed?
+          10. Would a real lawyer sign off on this?
+
+          Be precise. Cite sources. Flag uncertainties.
+          EOF
+
+          echo "Legal review prompt created."
+
+  # ============================================================================
+  # MARKET REALITY CHECK: Verify market assumptions
+  # ============================================================================
+  market-review:
+    name: Market Reality Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run Market Review
+        run: |
+          echo "Running market analysis..."
+          cat > market_prompt.txt << 'EOF'
+          You are a MARKET analyst. Verify all market assumptions.
+
+          VERIFY:
+          1. What's the actual market for annotated classic editions?
+          2. How many competitors exist in each category?
+          3. What are typical sales volumes for similar products?
+          4. Are the pricing assumptions realistic?
+          5. Do the revenue projections match market data?
+          6. What's the customer acquisition cost?
+          7. How saturated is the market?
+          8. What's the search volume for relevant keywords?
+          9. Are there better markets to target?
+          10. What market trends affect this business?
+
+          Use data where possible. Be skeptical of optimistic projections.
+          EOF
+
+          echo "Market review prompt created."
+
+  # ============================================================================
+  # EXECUTION REVIEW: Is this actually doable?
+  # ============================================================================
+  execution-review:
+    name: Execution Feasibility
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run Execution Review
+        run: |
+          echo "Running execution analysis..."
+          cat > execution_prompt.txt << 'EOF'
+          You are an EXECUTION reviewer. Can this actually be done?
+
+          VERIFY:
+          1. Are the time estimates realistic?
+          2. What skills does this require?
+          3. What's likely to take longer than expected?
+          4. What dependencies could block progress?
+          5. Is the automation actually saving time?
+          6. What manual work is hidden?
+          7. What could derail the January 1 timeline?
+          8. Are the tools recommendations appropriate?
+          9. Is the workflow actually optimized?
+          10. What would a solo creator struggle with?
+
+          Be practical. Focus on real-world execution.
+          EOF
+
+          echo "Execution review prompt created."
+
+  # ============================================================================
+  # SYNTHESIZE: Combine all reviews
+  # ============================================================================
+  synthesize-reviews:
+    name: Synthesize All Reviews
+    needs: [contrarian-review, strategic-review, legal-review, market-review, execution-review]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Combine Review Outputs
+        run: |
+          echo "Synthesizing all reviews..."
+          cat > synthesis_prompt.txt << 'EOF'
+          You are the SYNTHESIS reviewer. Combine all perspectives.
+
+          Given the contrarian, strategic, legal, market, and execution reviews:
+
+          1. What are the TOP 5 risks that must be addressed?
+          2. What are the TOP 3 opportunities being missed?
+          3. What needs to change before this plan is execution-ready?
+          4. What's the honest probability of success?
+          5. What's the minimum viable version of this plan?
+
+          Prioritize. Be actionable. Don't sugarcoat.
+          EOF
+
+          echo "Synthesis review prompt created."
+          echo ""
+          echo "============================================"
+          echo "Multi-AI Review Pipeline Complete"
+          echo "============================================"
+          echo ""
+          echo "Review prompts generated for:"
+          echo "  - Contrarian Analysis (find flaws)"
+          echo "  - Strategic Overview (big picture)"
+          echo "  - Legal Verification (check claims)"
+          echo "  - Market Reality (verify assumptions)"
+          echo "  - Execution Feasibility (is it doable?)"
+          echo "  - Synthesis (combine perspectives)"
