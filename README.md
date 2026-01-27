@@ -1,147 +1,190 @@
 # Public Domain Monetization System
 
-A complete, automated system for monetizing 1930 works entering US public domain on January 1, 2026 through Amazon KDP annotated editions.
+A complete system for producing AI-generated audiobooks from 1930 works entering US public domain on January 1, 2026.
+
+## Overview
+
+This project leverages local AI (Coqui XTTS-v2) on an RTX 5080 to produce audiobooks at 1/100th the cost of traditional production, targeting distribution through Google Play Books and Findaway Voices.
+
+### Key Advantages
+- **100x Cost Reduction**: Local TTS vs cloud ($30-50 vs $3,000-5,000 per title)
+- **Hardware Edge**: RTX 5080 produces 2-3 audiobooks per day
+- **Multi-Platform**: Findaway (40+ retailers), Google Play, direct sales
+- **Analytics Built-In**: Revenue tracking and dashboard system
 
 ## Quick Start
 
 ```bash
 # Clone and setup
-git clone https://github.com/dustinwloring1988/PublicDomainMonetization.git
+git clone git@github.com:dustingregg1/PublicDomainMonetization.git
 cd PublicDomainMonetization
 
-# Run the pipeline (after January 1, 2026)
-python scripts/run_pipeline.py maltese    # The Maltese Falcon
-python scripts/run_pipeline.py strong     # Strong Poison
-python scripts/run_pipeline.py last       # Last and First Men
+# Install dependencies
+pip install -r requirements.txt
+
+# Install TTS (GPU)
+pip install TTS torch --index-url https://download.pytorch.org/whl/cu121
+
+# Produce an audiobook
+python -m src.audiobook.pipeline \
+  --input texts/maltese_falcon_clean.txt \
+  --output output/maltese_falcon \
+  --voice-profile hardboiled_detective \
+  --book-id maltese_falcon_2026 \
+  --title "The Maltese Falcon"
 ```
-
-## What This Does
-
-Creates "Reader's Companion Editions" of public domain works with:
-- **Original introductions** (author biography, historical context, literary significance)
-- **Chapter summaries** for study and reference
-- **Character guides** with analysis
-- **Discussion questions** for book clubs
-- **Glossaries** of period terms
-- **Edition essays** explaining textual history
 
 ## Launch Titles
 
-| Title | Author | Tier | Risk | Hours |
-|-------|--------|------|------|-------|
-| The Maltese Falcon | Dashiell Hammett | Tier 1 | Low | 18-22 |
-| Strong Poison | Dorothy L. Sayers | Tier 1 | Low | 12-16 |
-| Last and First Men | Olaf Stapledon | Tier 1 | Low | 10-14 |
+| Title | Author | Status | Est. Hours | PD Status |
+|-------|--------|--------|------------|-----------|
+| The Maltese Falcon | Dashiell Hammett | Production Kit Ready | 15-18 | US: Jan 2026, EU: 2032 |
+| Strong Poison | Dorothy L. Sayers | Production Kit Ready | 16-19 | US: Jan 2026, EU: 2028 |
+| Last and First Men | Olaf Stapledon | Production Kit Ready | 21-23 | **GLOBAL PD** (died 1950) |
+
+See `kits/<title>/PRODUCTION_KIT.md` for complete production guides.
 
 ## System Architecture
 
 ```
-┌─────────────────────────────────────┐
-│      MASTER ORCHESTRATOR            │
-└──────────────┬──────────────────────┘
-               │
-   ┌───────────┼───────────┐
-   │           │           │
-┌──▼──┐    ┌───▼───┐   ┌───▼───┐
-│ PD  │    │Content│   │ KDP   │
-│Scout│    │Creator│   │Optim. │
-└─────┘    └───────┘   └───────┘
+┌──────────────────────────────────────────────────────────────┐
+│                     AUDIOBOOK PIPELINE                        │
+├──────────────────────────────────────────────────────────────┤
+│                                                               │
+│   ┌─────────────┐   ┌─────────────┐   ┌─────────────┐        │
+│   │    TEXT     │   │     TTS     │   │   AUDIO     │        │
+│   │ PROCESSING  │──▶│  SYNTHESIS  │──▶│  MASTERING  │        │
+│   └─────────────┘   └─────────────┘   └─────────────┘        │
+│         │                 │                  │                │
+│         ▼                 ▼                  ▼                │
+│   - OCR cleanup     - Coqui XTTS-v2   - ACX compliance       │
+│   - Chapter split   - ElevenLabs      - Noise reduction      │
+│   - Dialogue detect - Voice profiles  - M4B export           │
+│                                                               │
+├──────────────────────────────────────────────────────────────┤
+│                    DISTRIBUTION SYSTEM                        │
+├──────────────────────────────────────────────────────────────┤
+│                                                               │
+│   ┌─────────────┐   ┌─────────────┐   ┌─────────────┐        │
+│   │  FINDAWAY   │   │ GOOGLE PLAY │   │   DIRECT    │        │
+│   │   VOICES    │   │   BOOKS     │   │   SALES     │        │
+│   └─────────────┘   └─────────────┘   └─────────────┘        │
+│       70% royalty       70% royalty       95% margin         │
+│       40+ platforms     Global reach      Gumroad/Payhip     │
+│                                                               │
+├──────────────────────────────────────────────────────────────┤
+│                    ANALYTICS DASHBOARD                        │
+├──────────────────────────────────────────────────────────────┤
+│                                                               │
+│   Revenue Tracking | Goal Progress | Projections | Reports   │
+│                                                               │
+└──────────────────────────────────────────────────────────────┘
 ```
-
-**Specialized Agents:**
-- **PD Scout**: Discovers and evaluates PD opportunities
-- **Legal Clearance**: Verifies PD status and trademark clearance
-- **Source Hunter**: Locates authentic source editions
-- **Content Creator**: Generates companion content
-- **KDP Optimizer**: Maximizes listing performance
-- **Dispute Response**: Handles platform issues
 
 ## Project Structure
 
 ```
 PublicDomainMonetization/
-├── docs/
-│   └── AGENT_SWARM_ARCHITECTURE.md  # Full agent system design
 ├── src/
-│   ├── agents/                       # Agent configurations
-│   └── orchestration/                # Workflow automation
-├── scripts/
-│   ├── run_pipeline.py              # Quick pipeline runner
-│   └── cleanup_text.py              # OCR text cleanup
+│   ├── audiobook/
+│   │   ├── pipeline.py              # Main orchestrator
+│   │   ├── preprocessing/           # Text processing
+│   │   ├── tts/                     # TTS engines & voice profiles
+│   │   ├── postprocessing/          # Audio mastering
+│   │   ├── distribution/            # Platform uploaders
+│   │   └── config/                  # YAML configurations
+│   ├── analytics/
+│   │   ├── revenue_tracker.py       # Sales tracking
+│   │   └── analytics_dashboard.py   # Reports & visualization
+│   └── agents/                      # Specialized AI agents
 ├── kits/
-│   └── COMPLETE_PRODUCTION_KIT.md   # Execution guide
-└── .github/workflows/
-    └── multi-ai-review.yml          # Multi-AI review pipeline
+│   ├── maltese_falcon/              # Maltese Falcon production kit
+│   ├── strong_poison/               # Strong Poison production kit
+│   ├── last_and_first_men/          # Last and First Men production kit
+│   └── COMPLETE_PRODUCTION_KIT.md   # General production guide
+├── docs/
+│   ├── WORKFLOW_GUIDE.md            # Step-by-step workflow
+│   ├── AGENT_SWARM_ARCHITECTURE.md  # Agent system design
+│   └── research/                    # Market research
+├── scripts/
+│   └── cleanup_text.py              # Text preprocessing
+└── tests/
 ```
 
-## Multi-AI Review
+## Revenue Projections
 
-This plan is designed for systematic review by multiple AI systems with different perspectives:
+### Conservative (Year 1)
 
-| Review Type | Focus | AI Recommendation |
-|-------------|-------|-------------------|
-| Contrarian | Find flaws, challenge assumptions | Claude |
-| Strategic | Big picture, ROI analysis | Gemini |
-| Legal | Verify all legal claims | Claude |
-| Market | Validate market assumptions | ChatGPT + Perplexity |
-| Execution | Practical feasibility | ChatGPT |
-| Synthesis | Combine all perspectives | Claude |
+| Month | Titles Live | Monthly Revenue |
+|-------|-------------|-----------------|
+| 1-2 | 1 | $250-300 |
+| 3-4 | 2 | $500-600 |
+| 5-6 | 3 | $750-900 |
+| 7-12 | 3+ | $1,000-1,500 |
 
-```bash
-# See MULTI_AI_REVIEW_PROMPT.md for detailed review instructions
-# GitHub Actions runs reviews automatically on push/PR
-```
+**Conservative Year 1 Total: $6,000-10,000**
 
-## Revenue Projections (Conservative)
+### Realistic (Validated by 6-AI Review)
 
-| Timeline | Titles | Monthly Revenue |
-|----------|--------|-----------------|
-| Month 1 | 1 | $85 |
-| Month 3 | 3 | $255 |
-| Month 6 | 5 | $425 |
-| Year 1 | 10 | $850 |
-
-**Conservative first-year total: $5,000-7,000**
+| Outcome | Probability |
+|---------|------------|
+| Total failure | 30% |
+| Modest success ($500-1,500/mo) | 40% |
+| Good success ($2,000-4,000/mo) | 20% |
+| Great success ($5,000+/mo) | 10% |
 
 ## Requirements
 
+### Hardware
+- NVIDIA GPU with 16GB+ VRAM (RTX 5080 recommended)
+- 32GB+ RAM
+- Fast SSD storage
+
+### Software
 - Python 3.11+
-- Claude or ChatGPT subscription (for content generation)
-- Amazon KDP account
-- ~$0-300 in tools (optional: Atticus, Canva Pro)
+- CUDA toolkit
+- FFmpeg
 
-## Key Files
+### Accounts (Free to Create)
+- Findaway Voices Publisher Account
+- Google Play Books Partner Account
+- Gumroad/Payhip (optional, for direct sales)
 
-| File | Purpose |
-|------|---------|
-| `kits/COMPLETE_PRODUCTION_KIT.md` | Full execution guide |
-| `MULTI_AI_REVIEW_PROMPT.md` | Multi-AI review instructions |
-| `docs/AGENT_SWARM_ARCHITECTURE.md` | Agent system design |
-| `src/orchestration/master_orchestrator.py` | Workflow automation |
+## Key Documentation
 
-## Content Sources
+| Document | Purpose |
+|----------|---------|
+| [WORKFLOW_GUIDE.md](docs/WORKFLOW_GUIDE.md) | Complete step-by-step workflow |
+| [MASTERPLAN_V2.md](MASTERPLAN_V2.md) | Full strategy document |
+| [MARKET_REALITY_CHECK.md](MARKET_REALITY_CHECK.md) | 6-AI contrarian analysis |
+| [FINAL_PLAN_FOR_WIFE.md](FINAL_PLAN_FOR_WIFE.md) | Wife-explainable summary |
 
-- Project Gutenberg
-- Internet Archive
-- HathiTrust
-- Library of Congress
+## Analytics Dashboard
 
-## Monetization Channels
+```python
+from src.analytics.revenue_tracker import RevenueTracker
+from src.analytics.analytics_dashboard import AnalyticsDashboard
 
-- Amazon KDP (ebooks + paperbacks)
-- Email list building
-- Future: Audiobooks, courses, other platforms
+tracker = RevenueTracker()
+dashboard = AnalyticsDashboard(tracker)
+
+# CLI summary
+dashboard.print_summary()
+
+# Generate HTML dashboard
+dashboard.generate_html_dashboard()
+```
 
 ## Legal Notes
 
 - All works must be verified as US public domain before production
-- Trademark considerations documented in PD Dossiers
-- International rights (EU life+70) tracked per work
-- This is not legal advice - consult an attorney for specific situations
+- EU distribution may be restricted (life+70 years rule)
+- Trademark considerations documented in production kits
+- NOT legal advice - consult attorney for specific situations
 
-## Development
+## Contributing
 
-See [CLAUDE.md](CLAUDE.md) for development guidelines and project-specific instructions.
+This is a personal monetization project. Issues and suggestions welcome via GitHub.
 
 ## License
 
@@ -149,4 +192,4 @@ MIT License - See LICENSE file for details.
 
 ---
 
-*This system was built with Claude Code, leveraging specialized agents for research, production, and optimization.*
+*Built with Claude Code, leveraging local AI for 100x cost reduction in audiobook production.*
