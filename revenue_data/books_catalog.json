@@ -1,0 +1,44 @@
+{
+  "maltese_falcon_2026": {
+    "book_id": "maltese_falcon_2026",
+    "title": "The Maltese Falcon",
+    "author": "Dashiell Hammett",
+    "production_cost": "45",
+    "publish_date": "2026-01-15",
+    "platforms": [
+      "findaway_voices",
+      "google_play",
+      "direct_gumroad"
+    ],
+    "metadata": {},
+    "registered_at": "2026-01-27T19:55:19.119603"
+  },
+  "strong_poison_2026": {
+    "book_id": "strong_poison_2026",
+    "title": "Strong Poison",
+    "author": "Dorothy L. Sayers",
+    "production_cost": "50",
+    "publish_date": "2026-01-22",
+    "platforms": [
+      "findaway_voices",
+      "google_play",
+      "direct_gumroad"
+    ],
+    "metadata": {},
+    "registered_at": "2026-01-27T19:55:19.122395"
+  },
+  "last_first_men_2026": {
+    "book_id": "last_first_men_2026",
+    "title": "Last and First Men",
+    "author": "Olaf Stapledon",
+    "production_cost": "55",
+    "publish_date": "2026-02-01",
+    "platforms": [
+      "findaway_voices",
+      "google_play",
+      "direct_gumroad"
+    ],
+    "metadata": {},
+    "registered_at": "2026-01-27T19:55:19.124447"
+  }
+}
