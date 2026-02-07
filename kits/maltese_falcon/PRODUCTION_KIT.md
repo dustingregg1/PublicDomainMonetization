@@ -42,6 +42,77 @@
 
 ---
 
+## LEGAL HARDENING (REQUIRED)
+
+### Mandatory Disclaimer
+**Include on ALL products, packaging, and metadata:**
+
+```
+DISCLAIMER: This is an independent publication based on the original 1930
+public domain text by Dashiell Hammett. This work is not authorized,
+sponsored, or endorsed by the Hammett estate or Warner Bros. Entertainment.
+This edition is based solely on material first published in 1930.
+```
+
+**Placement requirements:**
+- Gumroad/direct sales: Visible on product page above purchase button
+- Findaway: Include in audiobook description
+- Google Play: Include in book description
+- M4B metadata: Include in copyright field
+- Cover art: NOT required on cover (would be ugly)
+
+### Trade Dress Avoidance Checklist
+**Before finalizing ANY visual materials, verify NONE of these elements:**
+
+| Element | AVOID | WHY |
+|---------|-------|-----|
+| Black bird silhouette in WB style | ❌ | 1941 film iconic prop |
+| 1940s film noir lighting | ❌ | Movie aesthetic, not book |
+| Fedora with dramatic shadows | ❌ | Bogart iconography |
+| San Francisco skyline at night | ⚠️ | OK if 1930s style, not noir |
+| Trench coat silhouette | ⚠️ | OK if clearly not Bogart |
+| Art deco golden/geometric | ✓ | Book era, pre-dates film |
+
+### Character Description (FROM NOVEL - NOT MOVIE)
+**Use these descriptions for any visual materials:**
+
+Sam Spade (FROM THE 1930 NOVEL):
+- "Samuel Spade's jaw was long and bony, his chin a jutting v under the more flexible v of his mouth."
+- "His nostrils curved back to make another, smaller, v."
+- "He looked rather pleasantly like a **blond satan**."
+- Hair: BLOND (NOT dark like Bogart)
+- Build: Tall, angular, V-shaped face
+
+**CRITICAL**: The 1941 film changed Spade's appearance. We use the BOOK description.
+
+### Negative Prompts for AI Cover Art
+**Always include when generating covers:**
+```
+NEGATIVE PROMPTS (always include):
+film noir lighting, 1940s aesthetic, fedora shadows, Humphrey Bogart style,
+Warner Bros movie poster style, black and white photography, movie still,
+film scene, trench coat noir, dramatic cigarette smoke, venetian blind
+shadows, detective silhouette with hat
+```
+
+### EU Territory Blocking (REQUIRED)
+
+| Platform | Block EU? | Until When | How to Set |
+|----------|-----------|------------|------------|
+| Findaway | YES | Jan 1, 2032 | Distribution settings → Exclude territories |
+| Google Play | YES | Jan 1, 2032 | Content settings → Territory restrictions |
+| Gumroad | NO | N/A | Cannot geo-block, accept risk (low EU audience) |
+
+**EU Countries to Block:**
+Austria, Belgium, Bulgaria, Croatia, Cyprus, Czech Republic, Denmark, Estonia,
+Finland, France, Germany, Greece, Hungary, Ireland, Italy, Latvia, Lithuania,
+Luxembourg, Malta, Netherlands, Poland, Portugal, Romania, Slovakia, Slovenia,
+Spain, Sweden
+
+**Calendar Reminder**: Remove EU blocks on January 2, 2032
+
+---
+
 ## Source Text Information
 
 ### Recommended Source

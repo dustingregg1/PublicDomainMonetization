@@ -14,11 +14,36 @@
 
 ## Tier 1: Launch Titles (READY)
 
-| Title | Author | Status | Notes |
-|-------|--------|--------|-------|
-| The Maltese Falcon | Dashiell Hammett | ✓ Kit Ready | Hardboiled detective, high demand |
-| Strong Poison | Dorothy L. Sayers | ✓ Kit Ready | British mystery, series potential |
-| Last and First Men | Olaf Stapledon | ✓ Kit Ready | Global PD, first mover advantage |
+### REVISED LAUNCH ORDER (Per Critical Review)
+
+Start with LOWEST RISK title to validate pipeline before higher-profile works.
+
+| Priority | Title | Author | Status | Risk Level | Why This Order |
+|----------|-------|--------|--------|------------|----------------|
+| **1st** | Last and First Men | Olaf Stapledon | ✓ Kit Ready | **LOWEST** | Global PD, zero EU restrictions, validate pipeline |
+| **2nd** | The Maltese Falcon | Dashiell Hammett | ✓ Kit Ready | LOW | High demand, EU block until 2032 |
+| **3rd** | Strong Poison | Dorothy L. Sayers | ✓ Kit Ready | LOW | British voice test, EU block until 2028 |
+
+### Rationale for Revised Order:
+
+1. **Last and First Men FIRST**
+   - Zero legal risk (author died 1950 - already global PD)
+   - No territorial restrictions - distribute EVERYWHERE
+   - Tests full pipeline with real production
+   - Niche but dedicated audience = quality signal
+   - If something goes wrong, minimal exposure
+
+2. **The Maltese Falcon SECOND**
+   - Higher demand = worth waiting until pipeline proven
+   - EU restrictions (block until 2032)
+   - More competitive market - need quality proven first
+   - Sam Spade character confirmed clear (1954 ruling)
+
+3. **Strong Poison THIRD**
+   - Tests British voice profile
+   - EU restrictions (block until 2028 - shorter)
+   - Series potential (Harriet Vane sequence)
+   - Lower initial demand than Maltese Falcon
 
 ---
 
@@ -156,21 +181,43 @@ Start researching now for January 1, 2027:
 
 ---
 
-## Production Schedule (2026)
+## Production Schedule (2026) - REVISED
 
-| Month | Title | Platform Launch |
-|-------|-------|-----------------|
-| January | The Maltese Falcon | Findaway, Google Play, Gumroad |
-| February | Strong Poison | All platforms |
-| March | Last and First Men | All platforms |
-| April | The Murder at the Vicarage | All platforms |
-| May | As I Lay Dying | All platforms |
-| June | Vile Bodies | All platforms |
-| July-Aug | Buffer / QA / Marketing | - |
-| September | The Castle | All platforms |
-| October | Not Without Laughter | All platforms |
-| November | TBD from queue | - |
-| December | 2027 prep | Research, text acquisition |
+### Q1: Launch Phase (Validate Pipeline)
+
+| Month | Title | Platforms | Notes |
+|-------|-------|-----------|-------|
+| February | **Last and First Men** | ALL (Global PD!) | Pipeline validation |
+| February | Begin chatbot MVP development | - | Parallel track |
+| March | **The Maltese Falcon** | Findaway, Google, Gumroad (BLOCK EU) | High demand launch |
+| April | **Strong Poison** | Findaway, Google, Gumroad (BLOCK EU) | British voice test |
+
+### Q2: Expansion Phase
+
+| Month | Title | Notes |
+|-------|-------|-------|
+| May | As I Lay Dying | Southern voice profile |
+| June | Vile Bodies | British satire |
+| June | Character chatbot beta launch | Sam Spade pilot |
+
+### Q3: Consolidation Phase
+
+| Month | Activity | Notes |
+|-------|----------|-------|
+| July-Aug | Marketing push + QA | Build audience |
+| August | Kickstarter campaign prep | Illustrated Maltese Falcon |
+| September | The Castle | Kafka literary |
+
+### Q4: Scale Phase
+
+| Month | Activity | Notes |
+|-------|----------|-------|
+| October | Not Without Laughter | Langston Hughes |
+| November | Kickstarter launch | Illustrated edition |
+| December | 2027 prep | Research Glass Key, Good Earth |
+
+### Deferred: Murder at the Vicarage
+**Reason**: Christie estate is active, EU block until 2047 (!), trademark research needed on "Miss Marple". Move to 2027 after establishing business.
 
 ---
 
@@ -195,4 +242,5 @@ Start researching now for January 1, 2027:
 
 ---
 
-*Last Updated: January 27, 2026*
+*Last Updated: February 7, 2026*
+*Revised per CRITICAL_REVIEW.md analysis*

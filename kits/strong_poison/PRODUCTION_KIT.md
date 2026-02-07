@@ -44,6 +44,81 @@
 
 ---
 
+## LEGAL HARDENING (REQUIRED)
+
+### Mandatory Disclaimer
+**Include on ALL products, packaging, and metadata:**
+
+```
+DISCLAIMER: This is an independent publication based on the original 1930
+public domain text by Dorothy L. Sayers. This work is not authorized,
+sponsored, or endorsed by the Sayers estate, Hodder & Stoughton, or any
+affiliated parties. This edition is based solely on material first
+published in 1930.
+```
+
+**Placement requirements:**
+- Gumroad/direct sales: Visible on product page above purchase button
+- Findaway: Include in audiobook description
+- Google Play: Include in book description
+- M4B metadata: Include in copyright field
+
+### Trade Dress Avoidance Checklist
+**Before finalizing ANY visual materials, verify NONE of these elements:**
+
+| Element | AVOID | WHY |
+|---------|-------|-----|
+| Yellow book spine | ❌ | Hodder & Stoughton trade dress |
+| Dorothy L. Sayers signature logo | ❌ | Publisher trademark |
+| Ian Carmichael likeness | ❌ | BBC adaptation actor |
+| Edward Petherbridge likeness | ❌ | Later adaptation actor |
+| Monocle + blonde man combo | ⚠️ | Too close to TV Wimsey |
+| 1930s British elegant style | ✓ | Period appropriate |
+| Art deco poison bottles | ✓ | Book theme, original |
+
+### Character Description (FROM NOVEL)
+**Use these descriptions for any visual materials:**
+
+Lord Peter Wimsey (1930 novel):
+- "A long, narrow chin, and teeth which he showed when he smiled"
+- Fair-haired, slight build
+- Monocle (but avoid TV depiction style)
+- Upper-class, elegant but not foppish
+
+Harriet Vane:
+- Dark hair, intelligent face
+- Reserved, dignified bearing
+- NOT glamorous/Hollywood style
+
+### Negative Prompts for AI Cover Art
+```
+NEGATIVE PROMPTS (always include):
+Ian Carmichael, Edward Petherbridge, BBC drama style, ITV production,
+television adaptation, yellow spine, Hodder publisher style, modern
+Christie-style cover, TV detective, British period drama screenshot
+```
+
+### EU Territory Blocking (REQUIRED)
+
+| Platform | Block EU? | Until When | How to Set |
+|----------|-----------|------------|------------|
+| Findaway | YES | Jan 1, 2028 | Distribution settings → Exclude territories |
+| Google Play | YES | Jan 1, 2028 | Content settings → Territory restrictions |
+| Gumroad | NO | N/A | Accept risk (low EU audience) |
+
+**Dorothy L. Sayers died December 17, 1957**
+EU copyright: Life + 70 years = January 1, 2028
+
+**EU Countries to Block:**
+Austria, Belgium, Bulgaria, Croatia, Cyprus, Czech Republic, Denmark, Estonia,
+Finland, France, Germany, Greece, Hungary, Ireland, Italy, Latvia, Lithuania,
+Luxembourg, Malta, Netherlands, Poland, Portugal, Romania, Slovakia, Slovenia,
+Spain, Sweden
+
+**Calendar Reminder**: Remove EU blocks on January 2, 2028
+
+---
+
 ## Why This Title?
 
 ### Market Opportunity

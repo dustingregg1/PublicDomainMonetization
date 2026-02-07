@@ -39,6 +39,52 @@
 
 ---
 
+## LEGAL HARDENING (REQUIRED)
+
+### Mandatory Disclaimer
+**Include on ALL products, packaging, and metadata:**
+
+```
+DISCLAIMER: This is an independent publication based on the original 1930
+public domain text by Olaf Stapledon. This work is not authorized,
+sponsored, or endorsed by any estate or affiliated party. This edition
+is based solely on material first published in 1930.
+```
+
+**Placement requirements:**
+- Gumroad/direct sales: Visible on product page above purchase button
+- Findaway: Include in audiobook description
+- Google Play: Include in book description
+- M4B metadata: Include in copyright field
+
+### Trade Dress Notes
+**MINIMAL RISK** - Stapledon has no significant visual trade dress concerns:
+- No major film adaptations to avoid (2006 film is art film, not commercial)
+- No active trademark apparatus
+- No publisher-specific branding to avoid
+
+**Safe for cover art:**
+- Cosmic imagery
+- Human evolution silhouettes
+- Planetary imagery
+- Abstract philosophical themes
+- 1930s modernist typography
+
+### EU Territory Blocking
+
+| Platform | Block EU? | Until When |
+|----------|-----------|------------|
+| Findaway | NO | N/A - GLOBAL PD |
+| Google Play | NO | N/A - GLOBAL PD |
+| Gumroad | NO | N/A - GLOBAL PD |
+
+**Stapledon died September 6, 1950**
+- EU copyright: Life + 70 years = Already expired (January 1, 2021)
+- US copyright: Already expired
+- **DISTRIBUTE GLOBALLY** - This is a key competitive advantage
+
+---
+
 ## Unique Selling Proposition
 
 ### Why This Will Sell
