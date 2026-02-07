@@ -27,6 +27,16 @@ class TestRomanNumerals:
     def test_invalid_returns_zero(self) -> None:
         assert roman_to_int("ABC") == 0
 
+    def test_unicode_roman_numerals(self) -> None:
+        """Test Unicode Roman numeral characters (U+2160-U+217B)."""
+        assert roman_to_int("\u2160") == 1   # Ⅰ
+        assert roman_to_int("\u2164") == 5   # Ⅴ
+        assert roman_to_int("\u2169") == 10  # Ⅹ
+        assert roman_to_int("\u2160\u2164") == 4  # ⅠⅤ → IV
+        # Lowercase Unicode variants
+        assert roman_to_int("\u2170") == 1   # ⅰ
+        assert roman_to_int("\u2174") == 5   # ⅴ
+
 
 class TestTextParser:
     """Tests for TextParser class."""
@@ -77,6 +87,32 @@ This is the end of the story with many words.
 
         assert len(chapters) == 3
         assert "Beginning" in chapters[0].title
+
+    def test_parse_unicode_roman_chapters(self) -> None:
+        """Test parsing with Unicode Roman numeral chapter headings (EPUB-style)."""
+        text = """
+Chapter \u2160: The First
+
+This is the first chapter with enough content.
+""" + " word" * 500 + """
+
+Chapter \u2161: The Second
+
+This is the second chapter with enough content.
+""" + " word" * 500 + """
+
+Chapter \u2162: The Third
+
+This is the third chapter with enough content.
+""" + " word" * 500
+
+        parser = TextParser(min_chapter_words=100)
+        chapters = parser.parse_text(text)
+
+        assert len(chapters) == 3
+        assert "First" in chapters[0].title
+        assert "Second" in chapters[1].title
+        assert "Third" in chapters[2].title
 
     def test_parse_no_chapters(self) -> None:
         """Test parsing text with no chapter markers."""

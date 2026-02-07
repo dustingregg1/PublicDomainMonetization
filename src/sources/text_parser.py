@@ -29,12 +29,26 @@ class Chapter:
             self.word_count = len(self.text.split())
 
 
+# Unicode Roman numeral characters (used in some EPUB sources)
+UNICODE_ROMAN = {
+    "\u2160": "I", "\u2161": "II", "\u2162": "III", "\u2163": "IV",
+    "\u2164": "V", "\u2165": "VI", "\u2166": "VII", "\u2167": "VIII",
+    "\u2168": "IX", "\u2169": "X", "\u216a": "XI", "\u216b": "XII",
+    "\u216c": "L", "\u216d": "C", "\u216e": "D", "\u216f": "M",
+    # Lowercase variants
+    "\u2170": "I", "\u2171": "II", "\u2172": "III", "\u2173": "IV",
+    "\u2174": "V", "\u2175": "VI", "\u2176": "VII", "\u2177": "VIII",
+    "\u2178": "IX", "\u2179": "X", "\u217a": "XI", "\u217b": "XII",
+}
+
 # Chapter heading patterns for various books
 CHAPTER_PATTERNS = [
     # "CHAPTER I", "CHAPTER 1", "CHAPTER ONE"
     r"^CHAPTER\s+([IVXLCDM]+|\d+|[A-Z]+)\b",
-    # "Chapter I.", "Chapter 1."
+    # "Chapter I.", "Chapter 1." (ASCII roman)
     r"^Chapter\s+([IVXLCDM]+|\d+)\b",
+    # "Chapter Ⅰ:", "Chapter Ⅱ:" etc (Unicode roman numerals)
+    r"^Chapter\s+([\u2160-\u217b]+)[:\.]?",
     # "I.", "II.", "III." at start of line (Roman numeral sections)
     r"^([IVXLCDM]{1,6})\.\s*$",
     # "1.", "2." etc. at start of line
@@ -57,8 +71,15 @@ ROMAN_MAP = {
 
 
 def roman_to_int(s: str) -> int:
-    """Convert roman numeral string to integer."""
-    s = s.upper().strip()
+    """Convert roman numeral string (ASCII or Unicode) to integer."""
+    # Convert Unicode roman numerals to ASCII first
+    converted = ""
+    for c in s:
+        if c in UNICODE_ROMAN:
+            converted += UNICODE_ROMAN[c]
+        else:
+            converted += c
+    s = converted.upper().strip()
     if s in ROMAN_MAP:
         return ROMAN_MAP[s]
     # Fallback calculation
