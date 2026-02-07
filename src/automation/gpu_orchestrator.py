@@ -473,33 +473,70 @@ class GPUOrchestrator:
             return False
 
     async def _run_tts_task(self, task: GPUTask) -> None:
-        """Run TTS synthesis task."""
-        # This would integrate with the audiobook pipeline
-        # For now, placeholder that shows the structure
+        """Run TTS synthesis task using Coqui XTTS-v2."""
+        from src.audiobook.tts_engine import TTSEngine
 
         data = task.input_data
+        text = data.get("text", "")
+        voice_profile = data.get("voice_profile", "default")
+        output_path = task.output_path
+
         logger.info(
             f"TTS: {data['book_id']} - {data['chapter_title']} "
-            f"({len(data['text'])} chars)"
+            f"({len(text)} chars)"
         )
 
-        # Simulate TTS processing
-        # In production, this calls src.audiobook.tts.tts_engine
-        task.progress = 0.5
-        await asyncio.sleep(1)  # Placeholder
+        if not text or text == "placeholder":
+            logger.warning(f"No text for {data['chapter_title']}, skipping")
+            task.progress = 1.0
+            return
+
+        def progress_cb(current: int, total: int) -> None:
+            task.progress = current / total
+
+        engine = TTSEngine(voice_profile=voice_profile)
+        try:
+            await asyncio.get_event_loop().run_in_executor(
+                None,
+                lambda: engine.synthesize_chapter(
+                    text=text,
+                    output_path=output_path,
+                    progress_callback=progress_cb,
+                ),
+            )
+        finally:
+            engine.unload_model()
+
         task.progress = 1.0
 
     async def _run_image_task(self, task: GPUTask) -> None:
-        """Run image generation task."""
+        """Run image generation task using Stable Diffusion XL."""
+        from src.audiobook.cover_art import CoverArtGenerator, CoverArtConfig
+
         data = task.input_data
         logger.info(
-            f"Image: {data['book_id']} variation {data['variation']} "
-            f"({data['width']}x{data['height']})"
+            f"Image: {data['book_id']} variation {data.get('variation', 0)} "
+            f"({data.get('width', 1024)}x{data.get('height', 1536)})"
         )
 
-        # Would call Stable Diffusion
-        task.progress = 0.5
-        await asyncio.sleep(1)  # Placeholder
+        config = CoverArtConfig(
+            prompt=data.get("prompt", ""),
+            negative_prompt=data.get("negative_prompt", ""),
+            width=data.get("width", 1024),
+            height=data.get("height", 1536),
+            seed=42 + data.get("variation", 0),
+        )
+
+        generator = CoverArtGenerator()
+        try:
+            task.progress = 0.1
+            await asyncio.get_event_loop().run_in_executor(
+                None,
+                lambda: generator.generate_cover(config, task.output_path),
+            )
+        finally:
+            generator.unload_model()
+
         task.progress = 1.0
 
     async def _run_llm_task(self, task: GPUTask) -> None:
@@ -513,13 +550,23 @@ class GPUOrchestrator:
         task.progress = 1.0
 
     async def _run_mastering_task(self, task: GPUTask) -> None:
-        """Run audio mastering task."""
+        """Run audio mastering task using AudioMastering."""
+        from src.audiobook.postprocessing import AudioMastering
+
         data = task.input_data
+        input_path = Path(data.get("input_path", ""))
+        output_path = task.output_path
+        profile = data.get("mastering_profile", "audiobook_standard")
+
         logger.info(f"Mastering: {data.get('book_id', 'unknown')}")
 
-        # Would call src.audiobook.postprocessing.audio_mastering
-        task.progress = 0.5
-        await asyncio.sleep(1)  # Placeholder
+        mastering = AudioMastering(profile=profile)
+
+        task.progress = 0.1
+        await asyncio.get_event_loop().run_in_executor(
+            None,
+            lambda: mastering.master_chapter(input_path, output_path),
+        )
         task.progress = 1.0
 
     async def process_queue(self) -> None:

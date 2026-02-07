@@ -15,15 +15,39 @@ markdown>=3.5.0
 python-docx>=1.0.0
 ebooklib>=0.18
 
-# API clients (optional - for advanced automation)
-anthropic>=0.18.0  # Claude API
-openai>=1.12.0     # OpenAI API
+# ── Audiobook Production Pipeline ──
+
+# TTS Engine (Coqui XTTS-v2)
+TTS>=0.22.0
+
+# Audio processing
+pydub>=0.25.1
+librosa>=0.10.0
+soundfile>=0.12.0
+
+# Image generation (cover art)
+diffusers>=0.27.0
+transformers>=4.38.0
+accelerate>=0.27.0
+Pillow>=10.0.0
+safetensors>=0.4.0
+
+# PyTorch (install separately for CUDA support):
+# pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
+torch>=2.1.0
+torchvision>=0.16.0
+torchaudio>=2.1.0
+
+# ── API Clients (optional) ──
+# anthropic>=0.18.0  # Claude API
+# openai>=1.12.0     # OpenAI API
 
 # Development
 pytest>=7.4.0
 black>=24.0.0
 mypy>=1.8.0
 
-# Optional: OCR and text extraction
-# pytesseract>=0.3.10
-# pdf2image>=1.16.0
+# System dependencies (install via apt/brew, not pip):
+# ffmpeg - required for audio/video conversion
+#   apt install ffmpeg  (Linux)
+#   brew install ffmpeg  (macOS)

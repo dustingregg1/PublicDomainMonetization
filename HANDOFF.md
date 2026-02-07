@@ -1,159 +1,142 @@
 # Session Handoff - Public Domain Monetization Project
 
 **Date:** February 7, 2026
-**Hardware:** Moving to ROG Strix G18 with RTX 5080 (16GB VRAM)
-**Status:** Ready for first audiobook production
+**Hardware:** ROG Strix G18 with RTX 5080 (16GB VRAM)
+**Status:** Full pipeline built - ready for first audiobook production
 
 ---
 
 ## IMMEDIATE NEXT STEP
 
-On the new laptop with RTX 5080:
+Install dependencies and run the production pipeline:
 
 ```bash
-# 1. Clone the repo (or OneDrive will have synced it)
-cd ~/Desktop/PublicDomainMonetization
+# 1. Install Python dependencies
+pip install -r requirements.txt
 
-# 2. Install dependencies
-pip install TTS pydub librosa soundfile
+# For CUDA GPU support (recommended):
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
 
-# 3. Install Ollama for local LLM
-# Download from https://ollama.ai
+# 2. Install ffmpeg (required for audio packaging)
+apt install ffmpeg  # Linux
+# brew install ffmpeg  # macOS
 
-# 4. Download source text
-# Last and First Men from Project Gutenberg: https://www.gutenberg.org/ebooks/17662
-
-# 5. Test GPU access
+# 3. Verify GPU
 python -c "import torch; print(torch.cuda.is_available())"
 
-# 6. Run first production
+# 4. Test pipeline stages
+python scripts/test_pipeline.py --gpu
+python scripts/test_pipeline.py --download
+python scripts/test_pipeline.py --parse
+python scripts/test_pipeline.py --tts        # Requires TTS installed
+python scripts/test_pipeline.py --master     # Requires pydub + ffmpeg
+python scripts/test_pipeline.py --package    # Requires ffmpeg
+
+# 5. Full production run
+python scripts/run_overnight.py --download last_and_first_men
 python scripts/run_overnight.py --book last_and_first_men
 python scripts/run_overnight.py --run
 ```
 
 ---
 
-## What Was Built This Session (Feb 7, 2026)
+## What Was Built
 
-### 1. Critical Review & Legal Hardening
-- `CRITICAL_REVIEW.md` - Gap analysis vs Gemini research
-- All 3 production kits updated with:
-  - Mandatory disclaimer templates
-  - Trade dress avoidance checklists
-  - EU territory blocking instructions
-  - Character descriptions FROM NOVELS (not movies)
-  - Negative prompts for AI cover art
+### Session 1: Planning & Legal Framework
+- Production kits for 3 titles with legal hardening
+- Critical review and gap analysis
+- Account setup (Findaway, Google Play, Gumroad, Kit)
 
-### 2. RTX 5080 Automation Infrastructure
+### Session 2: Full Production Pipeline (Current)
+
+**New modules created:**
 ```
-src/automation/
+src/sources/
 ├── __init__.py
-├── gpu_orchestrator.py   # GPU task queue, VRAM management
-└── batch_processor.py    # Full audiobook batch production
+├── gutenberg.py           # Download from Project Gutenberg, strip headers
+└── text_parser.py         # Parse chapters from raw text
+
+src/audiobook/
+├── __init__.py
+├── tts_engine.py          # Coqui XTTS-v2 TTS synthesis
+├── postprocessing.py      # Audio normalization, mastering
+├── packaging.py           # MP3/M4B creation with chapter markers
+└── cover_art.py           # Stable Diffusion XL cover generation
+
+src/automation/
+├── gpu_orchestrator.py    # GPU task queue (NOW WIRED TO REAL CODE)
+└── batch_processor.py     # Batch production (NOW WIRED TO REAL CODE)
 
 scripts/
-└── run_overnight.py      # CLI for overnight batch processing
+├── run_overnight.py       # Overnight production CLI (REAL PARSING)
+└── test_pipeline.py       # Stage-by-stage pipeline validation
+
+tests/
+├── test_sources/          # Gutenberg + parser tests (33 passing)
+└── test_audiobook/        # TTS engine unit tests
 ```
 
-**Usage:**
-```bash
-python scripts/run_overnight.py --book all    # Queue all books
-python scripts/run_overnight.py --run         # Start overnight production
-python scripts/run_overnight.py --status      # Check GPU/queue status
-python scripts/run_overnight.py --resume      # Resume interrupted jobs
+**Key changes from scaffolding to real code:**
+- `gpu_orchestrator.py` now calls real TTS, SDXL, and mastering code
+- `batch_processor.py` now parses real chapters and calls real synthesis
+- `run_overnight.py` downloads from Gutenberg and parses chapter structure
+- Voice profiles configured per book genre (philosophical, hardboiled, British)
+- Trade dress avoidance baked into cover art negative prompts
+
+---
+
+## Pipeline Flow
+
+```
+Gutenberg Download → Chapter Parsing → TTS Synthesis → Audio Mastering → Packaging
+                                            ↓                               ↓
+                                      Cover Art Gen              MP3 + M4B + Metadata
 ```
 
-### 3. Revised Launch Order
+### Voice Profiles
+| Book | Profile | Speed | Style |
+|------|---------|-------|-------|
+| Last and First Men | `philosophical_sf` | 0.92x | Contemplative, measured |
+| Maltese Falcon | `hardboiled_detective` | 1.0x | Direct, noir tone |
+| Strong Poison | `golden_age_british` | 0.95x | Refined, period British |
+
+### Mastering Profiles
+| Book | Profile | Target LUFS | Silence |
+|------|---------|-------------|---------|
+| Last and First Men | `audiobook_dense` | -15 dB | 400-1000ms |
+| Maltese Falcon | `audiobook_dramatic` | -16 dB | 250-600ms |
+| Strong Poison | `audiobook_standard` | -16 dB | 300-800ms |
+
+---
+
+## Launch Order
 | Priority | Title | Author | Risk | Notes |
 |----------|-------|--------|------|-------|
 | **1st** | Last and First Men | Stapledon | LOWEST | Global PD, validates pipeline |
 | **2nd** | The Maltese Falcon | Hammett | LOW | High demand, EU block 2032 |
 | **3rd** | Strong Poison | Sayers | LOW | British voice, EU block 2028 |
 
-**Rationale:** Start with zero-risk title to validate pipeline before higher-profile works.
-
-### 4. Character Chatbot MVP Architecture
-- `docs/CHATBOT_MVP.md` - Complete technical spec
-- "Hire Sam Spade" detective roleplay concept
-- Runs on RTX 5080 with Ollama + Llama 3 8B
-- Revenue potential: $1,000-5,000/month
-
----
-
-## Key Insights from Critical Review
-
-1. **Audiobook-only is too narrow** - Need diversification (chatbots, Kickstarter)
-2. **Sam Spade is BLOND** in the book (not dark-haired like Bogart)
-3. **Christie is risky** - EU block until 2047, active estate
-4. **Marketing budget needed** - Plan for $500 initial allocation
-5. **EU blocking is required** - Must operationalize for Hammett/Sayers
-
----
-
-## Files Structure
-
-```
-PublicDomainMonetization/
-├── HANDOFF.md              # THIS FILE - read first on new machine
-├── CRITICAL_REVIEW.md      # Gap analysis and recommendations
-├── kits/
-│   ├── maltese_falcon/PRODUCTION_KIT.md   # +Legal hardening
-│   ├── strong_poison/PRODUCTION_KIT.md    # +Legal hardening
-│   └── last_and_first_men/PRODUCTION_KIT.md  # +Legal hardening
-├── docs/
-│   ├── TITLE_QUEUE.md      # Revised launch order
-│   ├── CHATBOT_MVP.md      # Chatbot architecture
-│   └── WORKFLOW_GUIDE.md   # Production workflow
-├── src/
-│   ├── automation/         # GPU orchestration (NEW)
-│   ├── analytics/          # Revenue tracking
-│   └── audiobook/          # TTS pipeline (scaffolding)
-└── scripts/
-    └── run_overnight.py    # Overnight batch CLI (NEW)
-```
-
----
-
-## Accounts Ready
-
-| Platform | Status | Purpose |
-|----------|--------|---------|
-| Findaway Voices | Created | 70% royalty distribution |
-| Google Play Books | Created | Direct publishing |
-| Gumroad | Created | 95% margin direct sales |
-| Kit (ConvertKit) | Created | Email list building |
-
 ---
 
 ## What Still Needs Doing
 
-### Before First Production
-- [ ] Install TTS dependencies (Coqui XTTS-v2)
-- [ ] Install Ollama + Llama 3 8B
-- [ ] Download "Last and First Men" source text
-- [ ] Test full pipeline with one chapter
-- [ ] Generate cover art
+### Before First Production (On RTX 5080 Laptop)
+- [ ] Install all dependencies (`pip install -r requirements.txt`)
+- [ ] Install CUDA PyTorch
+- [ ] Install ffmpeg
+- [ ] Run `test_pipeline.py --all` to verify
+- [ ] First full production of Last and First Men
 
 ### Production Phase
 - [ ] Produce Last and First Men (February)
-- [ ] Produce The Maltese Falcon (March)
-- [ ] Produce Strong Poison (April)
+- [ ] QA pass - listen to philosophical passages
+- [ ] Upload to Findaway, Google Play, Gumroad
+- [ ] Produce The Maltese Falcon (March) - need source text manually
+- [ ] Produce Strong Poison (April) - need source text manually
 
 ### Parallel Track
-- [ ] Begin chatbot MVP development (February)
-- [ ] Sam Spade beta launch (June)
-
----
-
-## Quick Context for Claude on New Machine
-
-Tell Claude:
-```
-I'm continuing the Public Domain Monetization project. Read HANDOFF.md and
-CRITICAL_REVIEW.md for full context. I have an RTX 5080 laptop now.
-
-Next step: Install dependencies and produce "Last and First Men" audiobook.
-```
+- [ ] Character chatbot MVP (docs/CHATBOT_MVP.md)
+- [ ] Marketing - $500 initial budget, target SF communities
 
 ---
 
@@ -177,5 +160,5 @@ Next step: Install dependencies and produce "Last and First Men" audiobook.
 
 ---
 
-*Handoff created: February 7, 2026*
-*Ready for production on RTX 5080 laptop*
+*Handoff updated: February 7, 2026*
+*Full pipeline built - 33 unit tests passing*

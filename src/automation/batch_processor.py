@@ -422,27 +422,39 @@ class BatchProcessor:
     async def _synthesize_chapter(
         self, job: BatchJob, chapter: ChapterProgress
     ) -> bool:
-        """Synthesize a single chapter."""
+        """Synthesize a single chapter using Coqui XTTS-v2."""
         try:
+            from src.audiobook.tts_engine import TTSEngine
+
             output_path = job.output_dir / "raw" / f"chapter_{chapter.chapter_num:02d}.wav"
 
-            # In production, this would call the TTS engine
-            # For now, simulate the process
             logger.info(
                 f"Synthesizing {job.title} - {chapter.title} "
                 f"({chapter.word_count} words)"
             )
 
-            # Placeholder for actual TTS call
-            # from src.audiobook.tts import TTSEngine
-            # engine = TTSEngine(voice_profile=job.voice_profile)
-            # await engine.synthesize(chapter_text, output_path)
+            # Load chapter text from source
+            chapter_text = self._get_chapter_text(job, chapter)
+            if not chapter_text:
+                logger.warning(f"No text for {chapter.title}, skipping")
+                chapter.duration_seconds = 0
+                chapter.audio_path = output_path
+                return True
 
-            await asyncio.sleep(0.5)  # Placeholder
+            engine = TTSEngine(voice_profile=job.voice_profile)
+            try:
+                await asyncio.get_event_loop().run_in_executor(
+                    None,
+                    lambda: engine.synthesize_chapter(
+                        text=chapter_text,
+                        output_path=output_path,
+                    ),
+                )
+            finally:
+                engine.unload_model()
 
             chapter.audio_path = output_path
-            # Estimate duration: ~150 words per minute
-            chapter.duration_seconds = (chapter.word_count / 150) * 60
+            chapter.duration_seconds = engine.estimate_duration(chapter_text)
 
             return True
 
@@ -451,52 +463,76 @@ class BatchProcessor:
             logger.error(f"Failed to synthesize chapter {chapter.chapter_num}: {e}")
             return False
 
+    def _get_chapter_text(
+        self, job: BatchJob, chapter: ChapterProgress
+    ) -> str:
+        """Load chapter text from parsed chapters stored in job metadata."""
+        parsed_chapters = job.metadata.get("parsed_chapters", {})
+        return parsed_chapters.get(chapter.chapter_id, "")
+
     async def _master_audio(self, job: BatchJob) -> None:
-        """Master all chapter audio files."""
+        """Master all chapter audio files using AudioMastering."""
+        from src.audiobook.postprocessing import AudioMastering
+
+        # Use dense mastering profile for philosophical text, standard otherwise
+        profile_map = {
+            "philosophical_sf": "audiobook_dense",
+            "hardboiled_detective": "audiobook_dramatic",
+            "golden_age_british": "audiobook_standard",
+        }
+        profile = profile_map.get(job.voice_profile, "audiobook_standard")
+        mastering = AudioMastering(profile=profile)
+
         for ch in job.chapters:
             if ch.audio_path and ch.audio_path.exists():
                 mastered_path = job.output_dir / "mastered" / ch.audio_path.name
 
-                # In production, call audio mastering
-                # from src.audiobook.postprocessing import AudioMastering
-                # mastering = AudioMastering()
-                # await mastering.process(ch.audio_path, mastered_path)
-
-                # Placeholder
-                await asyncio.sleep(0.1)
+                await asyncio.get_event_loop().run_in_executor(
+                    None,
+                    lambda cp=ch.audio_path, mp=mastered_path: mastering.master_chapter(cp, mp),
+                )
 
                 ch.mastered_path = mastered_path
+                logger.info(f"  Mastered: {ch.title}")
 
     async def _package_output(self, job: BatchJob) -> None:
-        """Package final audiobook files."""
+        """Package final audiobook files using AudiobookPackager."""
+        from src.audiobook.packaging import AudiobookPackager, BookMeta
+
         final_dir = job.output_dir / "final"
+        mastered_dir = job.output_dir / "mastered"
 
-        # Create combined MP3
-        mp3_path = final_dir / f"{job.book_id}.mp3"
-        # In production: combine chapters into single MP3
+        # Build disclaimer from production kit metadata
+        disclaimer = job.metadata.get("disclaimer", (
+            f"This is an independent publication based on the original "
+            f"public domain text by {job.author}. This work is not authorized, "
+            f"sponsored, or endorsed by any estate or affiliated party."
+        ))
 
-        # Create M4B with chapters
-        m4b_path = final_dir / f"{job.book_id}.m4b"
-        # In production: create M4B with chapter markers
+        book_meta = BookMeta(
+            title=job.title,
+            author=job.author,
+            description=job.metadata.get("description", ""),
+            disclaimer=disclaimer,
+            genre=job.metadata.get("genre", "Fiction"),
+        )
 
-        # Generate metadata
-        metadata_path = final_dir / "metadata.json"
-        metadata = {
-            "title": job.title,
-            "author": job.author,
-            "duration_seconds": job.total_duration_seconds,
-            "chapters": [
-                {
-                    "title": ch.title,
-                    "duration_seconds": ch.duration_seconds,
-                }
-                for ch in job.chapters
-            ],
-            "produced_at": datetime.now().isoformat(),
-        }
+        # Check if cover art exists
+        cover_path = job.output_dir / "cover" / "cover_v1.png"
+        if cover_path.exists():
+            book_meta.cover_art_path = cover_path
 
-        with open(metadata_path, "w") as f:
-            json.dump(metadata, f, indent=2)
+        chapter_titles = [ch.title for ch in job.chapters]
+
+        packager = AudiobookPackager(output_dir=final_dir)
+        await asyncio.get_event_loop().run_in_executor(
+            None,
+            lambda: packager.package_audiobook(
+                mastered_dir=mastered_dir,
+                book_meta=book_meta,
+                chapter_titles=chapter_titles,
+            ),
+        )
 
     def get_job_status(self, job_id: str) -> Optional[Dict[str, Any]]:
         """Get detailed status for a job."""

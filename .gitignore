@@ -68,3 +68,22 @@ api_key*
 *.pyo
 *.dll
 *.exe
+
+# Audiobook production output
+output/
+batch_jobs/
+texts/.gutenberg_cache/
+.tts_temp/
+
+# Large model files
+*.bin
+*.safetensors
+*.ckpt
+*.pt
+*.pth
+
+# Audio files (generated, not source)
+*.wav
+*.mp3
+*.m4b
+*.flac
