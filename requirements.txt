@@ -6,7 +6,7 @@ requests>=2.31.0
 aiohttp>=3.9.0
 
 # Data processing
-pandas>=1.4.0,<2.0
+pandas>=1.4.0
 beautifulsoup4>=4.12.0
 lxml>=4.9.0
 
@@ -17,8 +17,11 @@ ebooklib>=0.18
 
 # ── Audiobook Production Pipeline ──
 
-# TTS Engine (Coqui XTTS-v2)
-TTS>=0.22.0
+# TTS Engine - two backends supported:
+#   Coqui XTTS-v2 (Linux only): pip install TTS
+#   Bark via transformers (cross-platform): already included below
+# TTS>=0.22.0  # Uncomment on Linux only - no Windows wheels
+scipy>=1.11.0
 
 # Audio processing
 pydub>=0.25.1

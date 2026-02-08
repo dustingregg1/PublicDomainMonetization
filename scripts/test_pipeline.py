@@ -46,7 +46,9 @@ def test_gpu() -> bool:
         if torch.cuda.is_available():
             print(f"CUDA version: {torch.version.cuda}")
             print(f"GPU: {torch.cuda.get_device_name(0)}")
-            print(f"VRAM: {torch.cuda.get_device_properties(0).total_mem / 1e9:.1f} GB")
+            props = torch.cuda.get_device_properties(0)
+            vram = getattr(props, "total_memory", getattr(props, "total_mem", 0))
+            print(f"VRAM: {vram / 1e9:.1f} GB")
             print("PASS")
             return True
         else:

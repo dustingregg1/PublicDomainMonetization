@@ -1,7 +1,10 @@
 """
 TTS Engine for Audiobook Production
 
-Wraps Coqui XTTS-v2 for high-quality text-to-speech synthesis.
+Supports two backends:
+- Coqui XTTS-v2 (Linux, best quality for long-form narration)
+- Bark via transformers (Windows/Linux, good quality, no extra install)
+
 Optimized for RTX 5080 (16GB VRAM).
 
 Voice profiles control pitch, speed, and style for different
@@ -10,6 +13,7 @@ book genres (hardboiled detective, philosophical SF, British golden age).
 
 import logging
 import os
+import platform
 import re
 import wave
 from dataclasses import dataclass
@@ -17,6 +21,21 @@ from pathlib import Path
 from typing import List, Optional
 
 logger = logging.getLogger(__name__)
+
+# Auto-detect best available backend
+def _detect_backend() -> str:
+    """Detect which TTS backend is available."""
+    try:
+        from TTS.api import TTS  # noqa: F401
+        return "coqui"
+    except ImportError:
+        pass
+    try:
+        from transformers import AutoProcessor, BarkModel  # noqa: F401
+        return "bark"
+    except ImportError:
+        pass
+    return "none"
 
 
 @dataclass
@@ -130,7 +149,11 @@ def _split_into_chunks(text: str, max_chars: int = 500) -> List[str]:
 
 class TTSEngine:
     """
-    Text-to-Speech engine using Coqui XTTS-v2.
+    Text-to-Speech engine with automatic backend detection.
+
+    Backends (in priority order):
+    - Coqui XTTS-v2: Best quality, Linux only (pip install TTS)
+    - Bark: Good quality, cross-platform (uses transformers, already installed)
 
     Handles:
     - Loading model to GPU
@@ -140,68 +163,114 @@ class TTSEngine:
     - Progress tracking
     """
 
+    # Bark voice presets mapped to our voice profile names
+    BARK_SPEAKERS = {
+        "philosophical_sf": "v2/en_speaker_6",       # Calm, measured male
+        "hardboiled_detective": "v2/en_speaker_3",    # Direct male
+        "golden_age_british": "v2/en_speaker_1",      # Refined
+        "default": "v2/en_speaker_6",
+    }
+
     def __init__(
         self,
         model_name: str = "tts_models/multilingual/multi-dataset/xtts_v2",
         device: str = "auto",
         voice_profile: Optional[str] = None,
+        backend: Optional[str] = None,
     ) -> None:
         """
         Initialize TTS engine.
 
         Args:
-            model_name: Coqui TTS model identifier
+            model_name: Coqui TTS model identifier (used if backend is coqui)
             device: 'cuda', 'cpu', or 'auto'
             voice_profile: Name of voice profile to use
+            backend: 'coqui', 'bark', or None (auto-detect)
         """
         self.model_name = model_name
         self.device = device
         self.profile = VOICE_PROFILES.get(
             voice_profile or "default", VOICE_PROFILES["default"]
         )
+        self._voice_profile_name = voice_profile or "default"
+        self._backend = backend or _detect_backend()
         self._tts = None
+        self._bark_model = None
+        self._bark_processor = None
         self._loaded = False
+
+        logger.info(f"TTS backend: {self._backend}")
 
     def load_model(self) -> None:
         """Load TTS model to GPU/CPU."""
         if self._loaded:
             return
 
-        try:
-            from TTS.api import TTS
-        except ImportError:
-            raise ImportError(
-                "Coqui TTS not installed. Run: pip install TTS\n"
-                "For GPU support: pip install TTS torch torchvision torchaudio "
-                "--index-url https://download.pytorch.org/whl/cu121"
-            )
-
         device = self.device
         if device == "auto":
             import torch
             device = "cuda" if torch.cuda.is_available() else "cpu"
 
-        logger.info(f"Loading TTS model '{self.model_name}' on {device}")
+        if self._backend == "coqui":
+            self._load_coqui(device)
+        elif self._backend == "bark":
+            self._load_bark(device)
+        else:
+            raise ImportError(
+                "No TTS backend available. Install one of:\n"
+                "  pip install TTS          # Linux (Coqui XTTS-v2)\n"
+                "  pip install transformers  # Any platform (Bark)"
+            )
+
+    def _load_coqui(self, device: str) -> None:
+        """Load Coqui XTTS-v2 model."""
+        from TTS.api import TTS
+
+        logger.info(f"Loading Coqui TTS model '{self.model_name}' on {device}")
         self._tts = TTS(model_name=self.model_name).to(device)
         self._loaded = True
-        logger.info("TTS model loaded successfully")
+        logger.info("Coqui TTS model loaded")
+
+    def _load_bark(self, device: str) -> None:
+        """Load Bark model via transformers."""
+        from transformers import AutoProcessor, BarkModel
+        import torch
+
+        model_id = "suno/bark"
+        logger.info(f"Loading Bark model on {device}")
+        self._bark_processor = AutoProcessor.from_pretrained(model_id)
+        self._bark_model = BarkModel.from_pretrained(
+            model_id,
+            torch_dtype=torch.float16 if device == "cuda" else torch.float32,
+        ).to(device)
+
+        if device == "cuda":
+            self._bark_model = self._bark_model.to_bettertransformer()
+
+        self._loaded = True
+        self._device = device
+        logger.info("Bark TTS model loaded")
 
     def unload_model(self) -> None:
         """Unload model to free VRAM."""
         if self._tts is not None:
             del self._tts
             self._tts = None
-            self._loaded = False
+        if self._bark_model is not None:
+            del self._bark_model
+            del self._bark_processor
+            self._bark_model = None
+            self._bark_processor = None
+        self._loaded = False
 
-            # Free GPU memory
-            try:
-                import torch
-                if torch.cuda.is_available():
-                    torch.cuda.empty_cache()
-            except ImportError:
-                pass
+        try:
+            import torch
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+        except ImportError:
+            pass
 
-            logger.info("TTS model unloaded")
+        logger.info("TTS model unloaded")
 
     def synthesize_chapter(
         self,
@@ -216,7 +285,7 @@ class TTSEngine:
         Args:
             text: Chapter text
             output_path: Output WAV file path
-            speaker_wav: Optional reference audio for voice cloning
+            speaker_wav: Optional reference audio for voice cloning (Coqui only)
             progress_callback: Called with (current_chunk, total_chunks)
 
         Returns:
@@ -226,22 +295,20 @@ class TTSEngine:
         output_path = Path(output_path)
         output_path.parent.mkdir(parents=True, exist_ok=True)
 
-        # Clean text for TTS
         clean_text = self._clean_text_for_tts(text)
 
-        # Split into chunks
-        chunks = _split_into_chunks(clean_text, max_chars=500)
+        # Bark needs smaller chunks (~100-150 chars for ~13s audio)
+        max_chars = 150 if self._backend == "bark" else 500
+        chunks = _split_into_chunks(clean_text, max_chars=max_chars)
         total_chunks = len(chunks)
 
         logger.info(
             f"Synthesizing {total_chunks} chunks "
-            f"({len(clean_text):,} chars)"
+            f"({len(clean_text):,} chars) via {self._backend}"
         )
 
-        # Determine speaker reference
         ref_wav = speaker_wav or self.profile.speaker_wav
 
-        # Synthesize each chunk and concatenate
         temp_dir = output_path.parent / ".tts_temp"
         temp_dir.mkdir(exist_ok=True)
         chunk_files = []
@@ -253,23 +320,10 @@ class TTSEngine:
 
                 chunk_path = temp_dir / f"chunk_{i:04d}.wav"
 
-                if ref_wav and os.path.exists(ref_wav):
-                    # Voice cloning mode
-                    self._tts.tts_to_file(
-                        text=chunk,
-                        file_path=str(chunk_path),
-                        speaker_wav=ref_wav,
-                        language=self.profile.language,
-                        speed=self.profile.speed,
-                    )
-                else:
-                    # Use default speaker
-                    self._tts.tts_to_file(
-                        text=chunk,
-                        file_path=str(chunk_path),
-                        language=self.profile.language,
-                        speed=self.profile.speed,
-                    )
+                if self._backend == "coqui":
+                    self._synthesize_coqui(chunk, chunk_path, ref_wav)
+                elif self._backend == "bark":
+                    self._synthesize_bark(chunk, chunk_path)
 
                 chunk_files.append(chunk_path)
 
@@ -282,14 +336,12 @@ class TTSEngine:
                         f"({(i + 1) / total_chunks * 100:.0f}%)"
                     )
 
-            # Concatenate all chunks into final WAV
             self._concatenate_wav_files(chunk_files, output_path)
 
             logger.info(f"Chapter synthesized: {output_path}")
             return output_path
 
         finally:
-            # Clean up temp files
             for f in chunk_files:
                 if f.exists():
                     f.unlink()
@@ -298,6 +350,41 @@ class TTSEngine:
                     temp_dir.rmdir()
                 except OSError:
                     pass
+
+    def _synthesize_coqui(
+        self, text: str, output_path: Path, ref_wav: Optional[str]
+    ) -> None:
+        """Synthesize a chunk with Coqui XTTS-v2."""
+        kwargs = {
+            "text": text,
+            "file_path": str(output_path),
+            "language": self.profile.language,
+            "speed": self.profile.speed,
+        }
+        if ref_wav and os.path.exists(ref_wav):
+            kwargs["speaker_wav"] = ref_wav
+        self._tts.tts_to_file(**kwargs)
+
+    def _synthesize_bark(self, text: str, output_path: Path) -> None:
+        """Synthesize a chunk with Bark."""
+        import torch
+        import scipy.io.wavfile
+
+        speaker = self.BARK_SPEAKERS.get(
+            self._voice_profile_name, "v2/en_speaker_6"
+        )
+        inputs = self._bark_processor(
+            text, voice_preset=speaker, return_tensors="pt"
+        )
+        inputs = {k: v.to(self._bark_model.device) for k, v in inputs.items()}
+
+        with torch.no_grad():
+            output = self._bark_model.generate(**inputs)
+
+        audio = output.cpu().numpy().squeeze()
+        sample_rate = self._bark_model.generation_config.sample_rate
+
+        scipy.io.wavfile.write(str(output_path), rate=sample_rate, data=audio)
 
     def _clean_text_for_tts(self, text: str) -> str:
         """Clean text for TTS synthesis."""

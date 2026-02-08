@@ -60,7 +60,8 @@ def check_gpu() -> bool:
 
         if torch.cuda.is_available():
             name = torch.cuda.get_device_name(0)
-            vram = torch.cuda.get_device_properties(0).total_mem / 1024**3
+            props = torch.cuda.get_device_properties(0)
+            vram = getattr(props, "total_memory", getattr(props, "total_mem", 0)) / 1024**3
             print(f"  GPU: {name}")
             print(f"  VRAM: {vram:.1f} GB")
 
@@ -77,58 +78,79 @@ def check_gpu() -> bool:
         return False
 
 
-def download_xtts_model() -> bool:
-    section("3. Downloading XTTS-v2 model")
-
-    model_dir = Path.home() / ".local" / "share" / "tts" / "tts_models--multilingual--multi-dataset--xtts_v2"
-    if model_dir.exists() and (model_dir / "model.pth").exists():
-        size_gb = sum(f.stat().st_size for f in model_dir.rglob("*") if f.is_file()) / 1024**3
-        print(f"  Model already downloaded at {model_dir}")
-        print(f"  Size: {size_gb:.1f} GB")
-        return True
-
-    print("  Downloading XTTS-v2 (this will take a few minutes)...")
-    print("  You will need to accept the CPML license.")
-
+def detect_tts_backend() -> str:
+    """Detect which TTS backend is available."""
     try:
-        # Use TTS API to trigger download with license acceptance
-        proc = subprocess.run(
-            [
-                sys.executable, "-c",
-                "from TTS.api import TTS; "
-                "tts = TTS(model_name='tts_models/multilingual/multi-dataset/xtts_v2', gpu=False); "
-                "print('Model downloaded successfully')"
-            ],
-            input="y\n",
-            text=True,
-            capture_output=True,
-            timeout=600,
-        )
-        if proc.returncode == 0:
-            print("  Model downloaded successfully")
+        from TTS.api import TTS  # noqa: F401
+        return "coqui"
+    except ImportError:
+        pass
+    try:
+        from transformers import AutoProcessor, BarkModel  # noqa: F401
+        return "bark"
+    except ImportError:
+        pass
+    return "none"
+
+
+def download_tts_model() -> bool:
+    backend = detect_tts_backend()
+    section(f"3. Downloading TTS model (backend: {backend})")
+
+    if backend == "coqui":
+        model_dir = Path.home() / ".local" / "share" / "tts" / "tts_models--multilingual--multi-dataset--xtts_v2"
+        if model_dir.exists() and (model_dir / "model.pth").exists():
+            size_gb = sum(f.stat().st_size for f in model_dir.rglob("*") if f.is_file()) / 1024**3
+            print(f"  Coqui XTTS-v2 already downloaded ({size_gb:.1f} GB)")
             return True
-        else:
-            print(f"  Download failed: {proc.stderr[-500:]}")
+
+        print("  Downloading XTTS-v2 (this will take a few minutes)...")
+        try:
+            proc = subprocess.run(
+                [sys.executable, "-c",
+                 "from TTS.api import TTS; "
+                 "tts = TTS(model_name='tts_models/multilingual/multi-dataset/xtts_v2', gpu=False); "
+                 "print('OK')"],
+                input="y\n", text=True, capture_output=True, timeout=600,
+            )
+            if proc.returncode == 0:
+                print("  XTTS-v2 model downloaded")
+                return True
+            print(f"  Download failed: {proc.stderr[-300:]}")
             return False
-    except subprocess.TimeoutExpired:
-        print("  Download timed out")
-        return False
-    except Exception as e:
-        print(f"  Error: {e}")
+        except Exception as e:
+            print(f"  Error: {e}")
+            return False
+
+    elif backend == "bark":
+        print("  Using Bark TTS via transformers (cross-platform)")
+        print("  Downloading suno/bark model from HuggingFace...")
+        try:
+            from transformers import AutoProcessor, BarkModel
+            AutoProcessor.from_pretrained("suno/bark")
+            BarkModel.from_pretrained("suno/bark")
+            print("  Bark model downloaded and cached")
+            return True
+        except Exception as e:
+            print(f"  Download failed: {e}")
+            return False
+    else:
+        print("  ERROR: No TTS backend available!")
+        print("  Install one of:")
+        print("    pip install TTS           # Linux (Coqui XTTS-v2)")
+        print("    pip install transformers   # Any platform (Bark)")
         return False
 
 
 def smoke_test_tts(use_gpu: bool) -> bool:
     section("4. TTS Smoke Test")
     try:
-        from TTS.api import TTS
+        sys.path.insert(0, str(PROJECT_ROOT))
+        from src.audiobook.tts_engine import TTSEngine
 
-        device = "cuda" if use_gpu else "cpu"
-        print(f"  Loading XTTS-v2 on {device}...")
-
-        tts = TTS(
-            model_name="tts_models/multilingual/multi-dataset/xtts_v2",
-            gpu=use_gpu,
+        engine = TTSEngine(
+            voice_profile="philosophical_sf",
+            device="cuda" if use_gpu else "cpu",
         )
 
         test_text = (
@@ -138,15 +160,12 @@ def smoke_test_tts(use_gpu: bool) -> bool:
         output = PROJECT_ROOT / "output" / "test" / "smoke_test.wav"
         output.parent.mkdir(parents=True, exist_ok=True)
 
+        print(f"  Backend: {engine._backend}")
+        print(f"  Device: {'cuda' if use_gpu else 'cpu'}")
         print(f"  Synthesizing: '{test_text[:50]}...'")
         start = time.time()
 
-        # Use default speaker if no reference audio
-        tts.tts_to_file(
-            text=test_text,
-            file_path=str(output),
-            language="en",
-        )
+        engine.synthesize_chapter(test_text, output)
         elapsed = time.time() - start
 
         if output.exists():
@@ -165,6 +184,11 @@ def smoke_test_tts(use_gpu: bool) -> bool:
         import traceback
         traceback.print_exc()
         return False
+    finally:
+        try:
+            engine.unload_model()
+        except Exception:
+            pass
 
 
 def verify_source_text() -> bool:
@@ -219,7 +243,7 @@ def main() -> None:
         print("\n  Skipping GPU check (--cpu-only)")
 
     # 3. Model download
-    results["model"] = download_xtts_model()
+    results["model"] = download_tts_model()
 
     # 4. Smoke test
     if results.get("model"):
