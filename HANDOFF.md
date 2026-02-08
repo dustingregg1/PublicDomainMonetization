@@ -8,32 +8,20 @@
 
 ## IMMEDIATE NEXT STEP
 
-Install dependencies and run the production pipeline:
+Source text downloaded, chapters parsed, all deps installed. On RTX 5080:
 
 ```bash
-# 1. Install Python dependencies
-pip install -r requirements.txt
+# One-shot setup (installs deps, downloads model, runs smoke test)
+python scripts/setup_first_run.py
 
-# For CUDA GPU support (recommended):
-pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
+# Or step by step:
+python scripts/test_pipeline.py --gpu       # Verify CUDA
+python scripts/test_pipeline.py --parse     # Verify chapters (should say 16)
+python scripts/test_pipeline.py --tts       # Test TTS on short sample
+python scripts/test_pipeline.py --master    # Test audio mastering
+python scripts/test_pipeline.py --package   # Test MP3/M4B output
 
-# 2. Install ffmpeg (required for audio packaging)
-apt install ffmpeg  # Linux
-# brew install ffmpeg  # macOS
-
-# 3. Verify GPU
-python -c "import torch; print(torch.cuda.is_available())"
-
-# 4. Test pipeline stages
-python scripts/test_pipeline.py --gpu
-python scripts/test_pipeline.py --download
-python scripts/test_pipeline.py --parse
-python scripts/test_pipeline.py --tts        # Requires TTS installed
-python scripts/test_pipeline.py --master     # Requires pydub + ffmpeg
-python scripts/test_pipeline.py --package    # Requires ffmpeg
-
-# 5. Full production run
-python scripts/run_overnight.py --download last_and_first_men
+# Full production run
 python scripts/run_overnight.py --book last_and_first_men
 python scripts/run_overnight.py --run
 ```
@@ -47,7 +35,16 @@ python scripts/run_overnight.py --run
 - Critical review and gap analysis
 - Account setup (Findaway, Google Play, Gumroad, Kit)
 
-### Session 2: Full Production Pipeline (Current)
+### Session 3: Dependencies, Source Text, Unicode Fix (Current)
+- All pip deps installed (PyTorch 2.10+cu128, TTS 0.22.0, diffusers 0.36.0)
+- Downloaded Last and First Men from GitHub EPUB repo (Gutenberg proxy-blocked)
+- Fixed chapter parser for Unicode Roman numerals (Ⅰ→I, Ⅱ→II, etc.)
+- 35 unit tests passing (including 2 new Unicode tests)
+- pandas pinned to <2.0 (TTS 0.22.0 requirement)
+- numpy pinned to 1.26.x (pandas 1.5.x binary compat)
+- Added setup_first_run.py for one-shot model download + smoke test
+
+### Session 2: Full Production Pipeline
 
 **New modules created:**
 ```
@@ -71,9 +68,12 @@ scripts/
 ├── run_overnight.py       # Overnight production CLI (REAL PARSING)
 └── test_pipeline.py       # Stage-by-stage pipeline validation
 
+texts/
+└── last_and_first_men_clean.txt  # 115K words, 16 chapters parsed
+
 tests/
-├── test_sources/          # Gutenberg + parser tests (33 passing)
-└── test_audiobook/        # TTS engine unit tests
+├── test_sources/          # Gutenberg + parser tests (28 passing)
+└── test_audiobook/        # TTS engine unit tests (7 passing)
 ```
 
 **Key changes from scaffolding to real code:**
@@ -121,10 +121,14 @@ Gutenberg Download → Chapter Parsing → TTS Synthesis → Audio Mastering →
 ## What Still Needs Doing
 
 ### Before First Production (On RTX 5080 Laptop)
-- [ ] Install all dependencies (`pip install -r requirements.txt`)
-- [ ] Install CUDA PyTorch
-- [ ] Install ffmpeg
-- [ ] Run `test_pipeline.py --all` to verify
+- [x] Install all dependencies (`pip install -r requirements.txt`)
+- [x] Install CUDA PyTorch (2.10+cu128)
+- [x] Install ffmpeg
+- [x] Download source text (Last and First Men - 115K words, 16 chapters)
+- [x] Fix Unicode chapter parsing
+- [x] 35/35 unit tests passing
+- [ ] Run `python scripts/setup_first_run.py` (downloads XTTS-v2 model)
+- [ ] Run `test_pipeline.py --tts` (GPU smoke test)
 - [ ] First full production of Last and First Men
 
 ### Production Phase
@@ -160,5 +164,5 @@ Gutenberg Download → Chapter Parsing → TTS Synthesis → Audio Mastering →
 
 ---
 
-*Handoff updated: February 7, 2026*
-*Full pipeline built - 33 unit tests passing*
+*Handoff updated: February 8, 2026*
+*Full pipeline built + deps installed + source text downloaded - 35 unit tests passing*
